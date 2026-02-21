@@ -91,7 +91,6 @@ export default function App() {
               {sidebarOpen ? <ChevronLeft fontSize="small" /> : <ChevronRight fontSize="small" />}
             </IconButton>
             <BloomLogo />
-            <Box sx={{ width: 1, height: 20, bgcolor: BLOOM.border, mx: 1 }} />
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
               <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: BLOOM.textPrimary }}>
                 New Business Assistant
@@ -218,11 +217,10 @@ export default function App() {
         <Box sx={{
           flex: 1,
           mt: `${HEADER_H}px`,
-          ml: `${sidebarW}px`,
-          transition: 'margin-left 0.2s ease',
           overflow: 'auto',
           bgcolor: 'background.default',
           minHeight: `calc(100vh - ${HEADER_H}px)`,
+          minWidth: 0,
         }}>
           <Routes>
             <Route path="/"           element={<Dashboard />} />
