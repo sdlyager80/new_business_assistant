@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Paper, Button, Stepper, Step, StepLabel,
-  TextField, MenuItem, Chip, Table, TableBody, TableCell,
+  TextField, MenuItem, Chip, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, LinearProgress, Alert, Dialog,
   DialogTitle, DialogContent, DialogActions, Divider,
   IconButton,
@@ -97,8 +97,7 @@ const DEMO_EXTRACTED: ExtractedData = {
   contingentBeneficiary: 'Elena Rodriguez (Daughter)',
 };
 
-const FORM_TYPE_OPTIONS = ['ACORD 103 — Life Application', 'ACORD 104 — Life Supplement', 'ACORD 65 — Annuity Application'];
-const DOC_TYPE_OPTIONS   = ['APS', 'Paramedical Results', 'Financial Statement', 'Blood Profile', 'Other'];
+const DOC_TYPE_OPTIONS = ['APS', 'Paramedical Results', 'Financial Statement', 'Blood Profile', 'Other'];
 
 // ── Small sub-components ──────────────────────────────────────────────────────
 function FieldRow({
