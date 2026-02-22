@@ -118,7 +118,7 @@ export default function PdfDocumentViewer({
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1.0);
-  const [showHighlights, setShowHighlights] = useState(true);
+  const [showHighlights, setShowHighlights] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [calibrating, setCalibrating] = useState(false);
