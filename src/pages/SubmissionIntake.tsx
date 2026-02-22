@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PdfDocumentViewer from '../components/PdfDocumentViewer';
 import {
@@ -160,6 +160,39 @@ export default function SubmissionIntake() {
   const [aiRunning, setAiRunning] = useState(false);
   const [aiComplete, setAiComplete] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [dragOverAcord, setDragOverAcord] = useState(false);
+  const [dragOverSupporting, setDragOverSupporting] = useState(false);
+
+  const acordInputRef = useRef<HTMLInputElement>(null);
+  const supportingInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAcordFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    setAcordFiles([{
+      id: `upload-${Date.now()}`,
+      name: file.name,
+      formType: 'ACORD 103 — Life Application',
+      size: `${sizeMB} MB`,
+      date: new Date().toISOString().split('T')[0],
+    }]);
+    setAiRunning(true);
+    setAiComplete(false);
+    setTimeout(() => { setAiRunning(false); setAiComplete(true); }, 2500);
+  };
+
+  const handleSupportingFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const incoming = Array.from(files).map((file, i) => ({
+      id: `sup-${Date.now()}-${i}`,
+      name: file.name,
+      formType: 'Other',
+      size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+      date: new Date().toISOString().split('T')[0],
+    }));
+    setSupportingFiles(prev => [...prev, ...incoming]);
+  };
 
   // Extracted data state
   const [data, setData] = useState<ExtractedData>({
@@ -223,14 +256,28 @@ export default function SubmissionIntake() {
       </Box>
 
       {/* Drop zone */}
-      <Paper sx={{
-        p: 4, textAlign: 'center', bgcolor: BLOOM.canvas,
-        border: `2px dashed ${BLOOM.border}`, cursor: 'pointer',
-        transition: 'all 0.15s',
-        '&:hover': { borderColor: BLOOM.blue, bgcolor: BLOOM.bluePale },
-        mb: 2,
-      }}>
-        <CloudUpload sx={{ fontSize: 40, color: BLOOM.grey, mb: 1 }} />
+      <input
+        ref={acordInputRef}
+        type="file"
+        accept=".pdf,.PDF"
+        style={{ display: 'none' }}
+        onChange={(e) => handleAcordFiles(e.target.files)}
+      />
+      <Paper
+        onClick={() => acordInputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragOverAcord(true); }}
+        onDragLeave={() => setDragOverAcord(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOverAcord(false); handleAcordFiles(e.dataTransfer.files); }}
+        sx={{
+          p: 4, textAlign: 'center', cursor: 'pointer',
+          border: `2px dashed ${dragOverAcord ? BLOOM.blue : BLOOM.border}`,
+          bgcolor: dragOverAcord ? BLOOM.bluePale : BLOOM.canvas,
+          transition: 'all 0.15s',
+          '&:hover': { borderColor: BLOOM.blue, bgcolor: BLOOM.bluePale },
+          mb: 2,
+        }}
+      >
+        <CloudUpload sx={{ fontSize: 40, color: dragOverAcord ? BLOOM.blue : BLOOM.grey, mb: 1 }} />
         <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Drag &amp; drop ACORD forms here or click to browse</Typography>
         <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
           Supported: ACORD 103 (Life Application) · ACORD 104 (Life Supplement) · ACORD 65 (Annuity Application)
@@ -312,13 +359,28 @@ export default function SubmissionIntake() {
       )}
 
       {/* Drop zone */}
-      <Paper sx={{
-        p: 4, textAlign: 'center', bgcolor: BLOOM.canvas,
-        border: `2px dashed ${BLOOM.border}`, cursor: 'pointer',
-        transition: 'all 0.15s', mb: 2,
-        '&:hover': { borderColor: BLOOM.blue, bgcolor: BLOOM.bluePale },
-      }}>
-        <CloudUpload sx={{ fontSize: 40, color: BLOOM.grey, mb: 1 }} />
+      <input
+        ref={supportingInputRef}
+        type="file"
+        accept=".pdf,.PDF,.doc,.docx"
+        multiple
+        style={{ display: 'none' }}
+        onChange={(e) => handleSupportingFiles(e.target.files)}
+      />
+      <Paper
+        onClick={() => supportingInputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragOverSupporting(true); }}
+        onDragLeave={() => setDragOverSupporting(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOverSupporting(false); handleSupportingFiles(e.dataTransfer.files); }}
+        sx={{
+          p: 4, textAlign: 'center', cursor: 'pointer',
+          border: `2px dashed ${dragOverSupporting ? BLOOM.blue : BLOOM.border}`,
+          bgcolor: dragOverSupporting ? BLOOM.bluePale : BLOOM.canvas,
+          transition: 'all 0.15s', mb: 2,
+          '&:hover': { borderColor: BLOOM.blue, bgcolor: BLOOM.bluePale },
+        }}
+      >
+        <CloudUpload sx={{ fontSize: 40, color: dragOverSupporting ? BLOOM.blue : BLOOM.grey, mb: 1 }} />
         <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Upload Supporting Documents</Typography>
         <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
           APS · Paramedical Results · Financial Statements · Blood Profile · Other
