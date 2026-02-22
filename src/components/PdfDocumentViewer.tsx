@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import {
   NavigateBefore, NavigateNext, ZoomIn, ZoomOut, AutoAwesome, Layers, LayersClear,
+  MyLocation, ContentCopy,
 } from '@mui/icons-material';
 import { BLOOM } from '../theme';
 
@@ -67,6 +68,10 @@ export default function PdfDocumentViewer({
   const [showHighlights, setShowHighlights] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [calibrating, setCalibrating] = useState(false);
+  const [hoverPct, setHoverPct] = useState<{ x: number; y: number } | null>(null);
+  const [pinnedPoints, setPinnedPoints] = useState<Array<{ x: number; y: number; page: number }>>([]);
+  const pageBoxRef = useRef<HTMLDivElement>(null);
 
   // Base render width — fills the panel nicely at 1x zoom
   const BASE_WIDTH = 490;
@@ -82,6 +87,38 @@ export default function PdfDocumentViewer({
   }, []);
 
   const pageAnnotations = ANNOTATIONS.filter(a => !a.page || a.page === pageNumber);
+
+  // ── Calibration helpers ─────────────────────────────────────────────────────
+  const getPct = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = pageBoxRef.current;
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    return {
+      x: +((e.clientX - rect.left) / rect.width * 100).toFixed(1),
+      y: +((e.clientY - rect.top)  / rect.height * 100).toFixed(1),
+    };
+  };
+
+  const handlePageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!calibrating) return;
+    setHoverPct(getPct(e));
+  };
+
+  const handlePageMouseLeave = () => setHoverPct(null);
+
+  const handlePageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!calibrating) return;
+    const pct = getPct(e);
+    if (!pct) return;
+    const point = { ...pct, page: pageNumber };
+    setPinnedPoints(prev => [...prev.slice(-19), point]);
+    console.log(`📍 Page ${pageNumber}  x:${pct.x}%  y:${pct.y}%`);
+  };
+
+  const copyPinned = () => {
+    const text = pinnedPoints.map(p => `p${p.page} x:${p.x}% y:${p.y}%`).join('\n');
+    navigator.clipboard.writeText(text).catch(() => {});
+  };
 
   return (
     <Box sx={{
@@ -127,6 +164,20 @@ export default function PdfDocumentViewer({
               ? <Layers sx={{ fontSize: 16 }} />
               : <LayersClear sx={{ fontSize: 16 }} />
             }
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={calibrating ? 'Exit coordinate calibration' : 'Calibrate annotation positions'}>
+          <IconButton
+            size="small"
+            onClick={() => { setCalibrating(c => !c); setPinnedPoints([]); }}
+            sx={{
+              color: calibrating ? '#fff' : BLOOM.grey,
+              bgcolor: calibrating ? BLOOM.orange : 'transparent',
+              p: 0.5,
+              '&:hover': { bgcolor: calibrating ? BLOOM.orange + 'CC' : undefined },
+            }}
+          >
+            <MyLocation sx={{ fontSize: 16 }} />
           </IconButton>
         </Tooltip>
       </Box>
@@ -209,11 +260,18 @@ export default function PdfDocumentViewer({
           onLoadError={onDocumentLoadError}
           loading=""
         >
-          <Box sx={{
-            position: 'relative',
-            display: 'inline-block',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-          }}>
+          <Box
+            ref={pageBoxRef}
+            onMouseMove={handlePageMouseMove}
+            onMouseLeave={handlePageMouseLeave}
+            onClick={handlePageClick}
+            sx={{
+              position: 'relative',
+              display: 'inline-block',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+              cursor: calibrating ? 'crosshair' : 'default',
+            }}
+          >
             <Page
               pageNumber={pageNumber}
               width={Math.round(BASE_WIDTH * zoom)}
@@ -222,7 +280,7 @@ export default function PdfDocumentViewer({
             />
 
             {/* AI field highlight overlays */}
-            {showHighlights && (
+            {showHighlights && !calibrating && (
               <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
                 {pageAnnotations.map((ann) => (
                   <Box
@@ -259,12 +317,92 @@ export default function PdfDocumentViewer({
                 ))}
               </Box>
             )}
+
+            {/* Calibration: live crosshair + coordinate badge */}
+            {calibrating && hoverPct && (
+              <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                {/* Crosshair lines */}
+                <Box sx={{ position: 'absolute', top: `${hoverPct.y}%`, left: 0, right: 0, height: '1px', bgcolor: BLOOM.orange + 'AA' }} />
+                <Box sx={{ position: 'absolute', left: `${hoverPct.x}%`, top: 0, bottom: 0, width: '1px', bgcolor: BLOOM.orange + 'AA' }} />
+                {/* Coordinate badge — flips side if near right edge */}
+                <Box sx={{
+                  position: 'absolute',
+                  top: `${hoverPct.y}%`,
+                  left: hoverPct.x < 70 ? `${hoverPct.x + 1}%` : undefined,
+                  right: hoverPct.x >= 70 ? `${100 - hoverPct.x + 1}%` : undefined,
+                  transform: 'translateY(-100%)',
+                  bgcolor: BLOOM.orange,
+                  color: '#fff',
+                  fontSize: '0.5625rem',
+                  fontWeight: 700,
+                  px: 0.75,
+                  py: 0.25,
+                  borderRadius: '3px',
+                  whiteSpace: 'nowrap',
+                  fontFamily: 'monospace',
+                }}>
+                  x:{hoverPct.x}% y:{hoverPct.y}%
+                </Box>
+              </Box>
+            )}
+
+            {/* Calibration: pinned click markers */}
+            {calibrating && pinnedPoints.filter(p => p.page === pageNumber).map((p, i) => (
+              <Box key={i} sx={{
+                position: 'absolute',
+                top: `${p.y}%`,
+                left: `${p.x}%`,
+                width: 8, height: 8,
+                bgcolor: BLOOM.orange,
+                borderRadius: '50%',
+                transform: 'translate(-50%, -50%)',
+                pointerEvents: 'none',
+                boxShadow: '0 0 0 2px #fff',
+              }} />
+            ))}
           </Box>
         </Document>
       </Box>
 
+      {/* ── Calibration status bar ─────────────────────────────────────────── */}
+      {calibrating && (
+        <Box sx={{
+          px: 1.5, py: 0.75,
+          bgcolor: BLOOM.orangePale,
+          borderTop: `1px solid ${BLOOM.orange}44`,
+          flexShrink: 0,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography sx={{ fontSize: '0.625rem', fontWeight: 700, color: BLOOM.orange, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              Calibration Mode — hover to read coordinates · click to pin
+            </Typography>
+            {pinnedPoints.length > 0 && (
+              <Tooltip title="Copy all pinned points to clipboard">
+                <IconButton size="small" onClick={copyPinned} sx={{ p: 0.25, color: BLOOM.orange }}>
+                  <ContentCopy sx={{ fontSize: 13 }} />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+          {hoverPct && (
+            <Typography sx={{ fontSize: '0.625rem', color: BLOOM.orange, fontFamily: 'monospace' }}>
+              ▶ page {pageNumber}  x:{hoverPct.x}%  y:{hoverPct.y}%
+            </Typography>
+          )}
+          {pinnedPoints.length > 0 && (
+            <Box sx={{ mt: 0.5, maxHeight: 80, overflowY: 'auto' }}>
+              {pinnedPoints.map((p, i) => (
+                <Typography key={i} sx={{ fontSize: '0.5625rem', color: BLOOM.textSecondary, fontFamily: 'monospace', lineHeight: 1.6 }}>
+                  {String(i + 1).padStart(2, '0')}  p{p.page}  x:{p.x}%  y:{p.y}%
+                </Typography>
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
+
       {/* ── Highlight legend ────────────────────────────────────────────────── */}
-      {showHighlights && (
+      {showHighlights && !calibrating && (
         <Box sx={{
           px: 1.5, py: 0.75,
           bgcolor: BLOOM.canvas,
