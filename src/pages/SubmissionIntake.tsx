@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PdfDocumentViewer from '../components/PdfDocumentViewer';
 import {
   Box, Typography, Paper, Button, Stepper, Step, StepLabel,
   TextField, MenuItem, Chip, Table, TableBody, TableCell, TableContainer,
@@ -384,8 +385,8 @@ export default function SubmissionIntake() {
   // ── Step 3: Review extracted data ─────────────────────────────────────────
   const renderStep3 = () => (
     <Box sx={{ display: 'flex', gap: 2.5 }}>
-      {/* Left: editable form */}
-      <Box sx={{ flex: 1 }}>
+      {/* Left: editable form — scrolls independently */}
+      <Box sx={{ flex: 1, maxHeight: 'calc(100vh - 280px)', overflowY: 'auto', pr: 0.5 }}>
         <Box sx={{ mb: 2 }}>
           <Typography variant="h6" sx={{ mb: 0.25 }}>Review AI-Extracted Data</Typography>
           <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
@@ -461,38 +462,14 @@ export default function SubmissionIntake() {
         <FieldRow label="Contingent Beneficiary" {...field('contingentBeneficiary')} />
       </Box>
 
-      {/* Right: "PDF source" mock */}
-      <Box sx={{ width: 260, flexShrink: 0 }}>
-        <Paper sx={{ p: 1.5, bgcolor: BLOOM.canvas, position: 'sticky', top: 0 }}>
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, mb: 1, color: BLOOM.textSecondary }}>SOURCE DOCUMENT</Typography>
-          <Box sx={{ bgcolor: '#fff', border: `1px solid ${BLOOM.border}`, borderRadius: '6px', p: 1.5, minHeight: 340 }}>
-            <Box sx={{ fontSize: '0.625rem', fontWeight: 700, textAlign: 'center', mb: 1.5, pb: 0.75, borderBottom: `1px solid ${BLOOM.border}` }}>
-              ACORD 103 — LIFE APPLICATION
-            </Box>
-            {Object.entries({
-              'Full Name': 'Maria Rodriguez',
-              'Date of Birth': '03/15/1990',
-              Gender: 'Female',
-              SSN: '***-**-4521',
-              Occupation: 'Registered Nurse',
-              'Face Amount': '$500,000',
-              'Product': 'Term Life 20yr',
-              'Tobacco': 'Never',
-            }).map(([k, v]) => (
-              <Box key={k} sx={{ display: 'flex', gap: 0.5, mb: 0.75, alignItems: 'flex-start' }}>
-                <Box sx={{ bgcolor: BLOOM.bluePale, border: `1px solid ${BLOOM.blue + '44'}`, borderRadius: '3px', px: 0.5, flex: 1 }}>
-                  <Typography sx={{ fontSize: '0.5625rem', color: BLOOM.blue, fontWeight: 600 }}>{k}</Typography>
-                  <Typography sx={{ fontSize: '0.625rem', fontVariantNumeric: 'tabular-nums' }}>{v}</Typography>
-                </Box>
-              </Box>
-            ))}
-            <Box sx={{ mt: 1.5, pt: 1, borderTop: `1px solid ${BLOOM.border}` }}>
-              <Typography sx={{ fontSize: '0.5625rem', color: 'text.secondary' }}>
-                Confidence: <strong style={{ color: BLOOM.green }}>98%</strong> · 91/92 fields extracted
-              </Typography>
-            </Box>
-          </Box>
-        </Paper>
+      {/* Right: Real PDF viewer */}
+      <Box sx={{ width: 560, flexShrink: 0, position: 'sticky', top: 24, height: 'calc(100vh - 280px)' }}>
+        <PdfDocumentViewer
+          pdfUrl="/acord_application.pdf"
+          confidenceScore={98}
+          fieldsExtracted={91}
+          totalFields={92}
+        />
       </Box>
     </Box>
   );
@@ -571,7 +548,7 @@ export default function SubmissionIntake() {
   const steps = [renderStep1, renderStep2, renderStep3, renderStep4];
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1100, mx: 'auto' }}>
+    <Box sx={{ p: 3, maxWidth: activeStep === 2 ? 1500 : 1100, mx: 'auto' }}>
 
       {/* Page header */}
       <Box sx={{ mb: 3 }}>
