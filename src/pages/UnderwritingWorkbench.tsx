@@ -173,8 +173,16 @@ function OverviewTab({ sub }: { sub: Submission }) {
       </Paper>
 
       {/* Routing decision */}
-      <Paper sx={{ p: 2, bgcolor: BLOOM.orangePale, borderLeft: `3px solid ${BLOOM.orange}` }}>
-        <Typography sx={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: BLOOM.orange, mb: 0.75 }}>
+      <Paper sx={{
+        p: 2,
+        bgcolor: sub.stpEligible ? BLOOM.greenPale : BLOOM.orangePale,
+        borderLeft: `3px solid ${sub.stpEligible ? BLOOM.green : BLOOM.orange}`,
+      }}>
+        <Typography sx={{
+          fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase',
+          letterSpacing: '0.5px', mb: 0.75,
+          color: sub.stpEligible ? BLOOM.green : BLOOM.orange,
+        }}>
           Routing Decision
         </Typography>
         <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', mb: 0.25 }}>{sub.routingDecision}</Typography>
@@ -569,6 +577,37 @@ export default function UnderwritingWorkbench() {
               </Button>
             </Box>
           </Box>
+          {/* Intelligence banners */}
+          {sub.stpEligible && (
+            <Box sx={{
+              display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap',
+              mx: -3, px: 3, py: 0.875,
+              bgcolor: BLOOM.greenPale, borderTop: `1px solid ${BLOOM.green}33`, borderBottom: `1px solid ${BLOOM.green}33`,
+              mb: 1,
+            }}>
+              <AutoAwesome sx={{ fontSize: 14, color: BLOOM.green, flexShrink: 0 }} />
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: BLOOM.green }}>{sub.routingDecision}</Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: BLOOM.textSecondary }}>·</Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: BLOOM.textSecondary, flex: 1 }}>{sub.routingReason}</Typography>
+            </Box>
+          )}
+          {sub.aiInsights.some((i) => i.severity === 'warning' || i.severity === 'critical') && (
+            <Box sx={{
+              mx: -3, px: 3, py: 0.75,
+              bgcolor: BLOOM.orangePale, borderBottom: `1px solid ${BLOOM.orange}33`,
+              display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1,
+            }}>
+              <Warning sx={{ fontSize: 14, color: BLOOM.orange, flexShrink: 0, mt: 0.2 }} />
+              <Box>
+                {sub.aiInsights.filter((i) => i.severity === 'warning' || i.severity === 'critical').map((i) => (
+                  <Typography key={i.id} sx={{ fontSize: '0.75rem', color: BLOOM.orange, lineHeight: 1.6 }}>
+                    {i.message}
+                  </Typography>
+                ))}
+              </Box>
+            </Box>
+          )}
+
           <Tabs
             value={activeTab}
             onChange={(_, v) => setActiveTab(v)}

@@ -180,8 +180,25 @@ export default function Dashboard() {
                         {s.id}
                       </TableCell>
                       <TableCell>
-                        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, lineHeight: 1.2 }}>{s.applicantName}</Typography>
-                        <Typography sx={{ fontSize: '0.6875rem', color: 'text.secondary' }}>{s.state}</Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.875 }}>
+                          {s.id === 'NB-2026-VA-001' && (
+                            <Box sx={{
+                              width: 7, height: 7, borderRadius: '50%', bgcolor: BLOOM.blue, flexShrink: 0,
+                              animation: 'nbaPulse 1.6s ease-in-out infinite',
+                              '@keyframes nbaPulse': {
+                                '0%':   { opacity: 1, transform: 'scale(1)' },
+                                '50%':  { opacity: 0.35, transform: 'scale(0.8)' },
+                                '100%': { opacity: 1, transform: 'scale(1)' },
+                              },
+                            }} />
+                          )}
+                          <Box>
+                            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, lineHeight: 1.2 }}>{s.applicantName}</Typography>
+                            <Typography sx={{ fontSize: '0.6875rem', color: s.id === 'NB-2026-VA-001' ? BLOOM.blue : 'text.secondary' }}>
+                              {s.id === 'NB-2026-VA-001' ? `Just Now · ${s.state}` : s.state}
+                            </Typography>
+                          </Box>
+                        </Box>
                       </TableCell>
                       <TableCell sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                         {s.productType}

@@ -1,6 +1,85 @@
 import type { Submission } from './types';
 
 export const submissions: Submission[] = [
+  // ── NB-2026-VA-001 · Sam W Smith · Variable Annuity · STP ─────────────────
+  {
+    id: 'NB-2026-VA-001',
+    applicantName: 'Sam W Smith',
+    dob: '2000-01-01',
+    age: 26,
+    gender: 'M',
+    occupation: 'Not specified',
+    state: 'SC',
+    productType: 'Variable Annuity',
+    faceAmount: 100000,
+    annuityAmount: 100000,
+    status: 'STP Eligible',
+    priority: 'Low',
+    riskScore: 92,
+    assignedTo: 'STP Queue',
+    submittedDate: '2026-02-22',
+    slaDate: '2026-03-08',
+    slaDaysRemaining: 14,
+    routingDecision: 'Auto-Approve — STP',
+    routingReason: 'Non-qualified variable annuity, no replacements, all required fields complete. No suitability flags detected.',
+    stpEligible: true,
+    acordForms: [
+      {
+        formNumber: 'Bloom Prime Options',
+        formName: 'Variable Annuity Application',
+        confidenceScore: 97,
+        fieldsExtracted: 34,
+        totalFields: 35,
+        extractionTime: '1 min 48 sec',
+        fileName: 'Document_260218_184853 1 (1) 1.pdf',
+      },
+    ],
+    supportingDocs: [],
+    workflowStages: [
+      { name: 'Application Received',   status: 'complete', date: 'Feb 22, 14:32' },
+      { name: 'Documents Processed',    status: 'complete', date: 'Feb 22, 14:34' },
+      { name: 'Application Classified', status: 'complete', date: 'Feb 22, 14:34', note: 'Variable Annuity — 99% confidence' },
+      { name: 'Triage Complete',        status: 'complete', date: 'Feb 22, 14:35', note: 'STP eligible' },
+      { name: 'Suitability Review',     status: 'current',  date: 'Feb 22, 14:36', note: 'Auto-check in progress' },
+      { name: 'Decision',               status: 'pending' },
+      { name: 'Issue & Deliver',        status: 'pending' },
+    ],
+    aiInsights: [
+      {
+        id: 'ai-va001a',
+        severity: 'info',
+        category: 'STP',
+        message: 'Non-qualified variable annuity — all STP criteria met. No suitability flags detected.',
+      },
+      {
+        id: 'ai-va001b',
+        severity: 'info',
+        category: 'Plan',
+        message: 'Non-qualified plan confirmed. No replacements — clean transfer.',
+      },
+      {
+        id: 'ai-va001c',
+        severity: 'warning',
+        category: 'Beneficiary',
+        message: 'Contingent beneficiary address not provided — confirm before policy issue.',
+        action: 'Request address for Jake James John before issuance',
+      },
+      {
+        id: 'ai-va001d',
+        severity: 'info',
+        category: 'Agent',
+        message: 'Rep NPN 1234 verified — Mary Ann Blase, Blase Investments.',
+      },
+    ],
+    activityLog: [
+      { id: 'al-va001a', timestamp: 'Feb 22, 14:32', actor: 'System',     action: 'Submission received — NB-2026-VA-001' },
+      { id: 'al-va001b', timestamp: 'Feb 22, 14:34', actor: 'AI',         action: 'Application classified — Bloom Prime Options Variable Annuity, 99% confidence' },
+      { id: 'al-va001c', timestamp: 'Feb 22, 14:34', actor: 'AI',         action: 'Extraction complete — 34/35 fields extracted, 97% confidence' },
+      { id: 'al-va001d', timestamp: 'Feb 22, 14:35', actor: 'AI',         action: 'Triage complete — STP eligible, no suitability flags. Routed to STP Queue.' },
+      { id: 'al-va001e', timestamp: 'Feb 22, 14:36', actor: 'System',     action: 'Rep NPN 1234 verified — Mary Ann Blase, Blase Investments' },
+    ],
+  },
+
   // ── NB-2026-LA-001 · James Anderson · Complex Medical ─────────────────────
   {
     id: 'NB-2026-LA-001',

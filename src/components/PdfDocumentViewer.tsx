@@ -17,8 +17,9 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-// ── AI field highlight annotations (approximate positions for ACORD-style form)
-// Positions are % of rendered page width/height — adjust to match actual document.
+// ── AI field highlight annotations
+// Coordinates derived from OCR at 150 DPI, converted to % of page (612×792 pts).
+// Formula: left=x0/612*100, top=y0/792*100, width=(x1-x0)/612*100, height min 2.0%
 interface FieldAnnotation {
   label: string;
   top: number;
@@ -26,27 +27,79 @@ interface FieldAnnotation {
   width: number;
   height: number;
   color: string;
-  page?: number; // if undefined, shown on all pages
+  page?: number;
 }
 
+const H = 2.0; // minimum box height %
+
 const ANNOTATIONS: FieldAnnotation[] = [
-  // ── Section 1: Proposed Insured ─────────────────────────────────────────────
-  { label: 'Full Name',           top: 13.0, left: 5,  width: 35, height: 2.8, color: BLOOM.blue },
-  { label: 'Date of Birth ⚠',    top: 13.0, left: 42, width: 22, height: 2.8, color: BLOOM.red   },
-  { label: 'Gender',              top: 13.0, left: 66, width: 18, height: 2.8, color: BLOOM.blue },
-  { label: 'SSN',                 top: 18.5, left: 5,  width: 28, height: 2.8, color: BLOOM.blue },
-  { label: 'Address',             top: 23.0, left: 5,  width: 55, height: 2.8, color: BLOOM.blue },
-  { label: 'Occupation',          top: 28.5, left: 5,  width: 38, height: 2.8, color: BLOOM.blue },
-  { label: 'Annual Income ◐',    top: 28.5, left: 46, width: 30, height: 2.8, color: BLOOM.orange },
-  // ── Section 2: Coverage ─────────────────────────────────────────────────────
-  { label: 'Product Type',        top: 40.0, left: 5,  width: 30, height: 2.8, color: BLOOM.blue },
-  { label: 'Face Amount',         top: 40.0, left: 38, width: 25, height: 2.8, color: BLOOM.blue },
-  { label: 'Premium Mode',        top: 45.0, left: 5,  width: 28, height: 2.8, color: BLOOM.blue },
-  // ── Section 3: Medical ──────────────────────────────────────────────────────
-  { label: 'Pre-existing Cond.',  top: 55.0, left: 5,  width: 50, height: 2.8, color: BLOOM.blue },
-  { label: 'Tobacco Use',         top: 63.0, left: 5,  width: 25, height: 2.8, color: BLOOM.blue },
-  // ── Section 4: Beneficiary ──────────────────────────────────────────────────
-  { label: 'Primary Beneficiary', top: 74.0, left: 5,  width: 42, height: 2.8, color: BLOOM.blue },
+  // ── Page 1 · Annuitant ────────────────────────────────────────────────────
+  { label: 'First Name',     page: 1, top: 25.4, left: 19.6, width: 24.5, height: H, color: BLOOM.blue },
+  { label: 'Middle',         page: 1, top: 27.1, left: 19.6, width: 24.5, height: H, color: BLOOM.blue },
+  { label: 'Last Name',      page: 1, top: 28.9, left: 19.6, width: 24.5, height: H, color: BLOOM.blue },
+  { label: 'Address',        page: 1, top: 30.7, left: 19.6, width: 24.5, height: H, color: BLOOM.blue },
+  { label: 'City',           page: 1, top: 32.4, left: 19.6, width: 16.3, height: H, color: BLOOM.blue },
+  { label: 'State',          page: 1, top: 32.4, left: 36.3, width:  7.0, height: H, color: BLOOM.blue },
+  { label: 'Zip',            page: 1, top: 32.4, left: 43.6, width: 10.3, height: H, color: BLOOM.blue },
+  { label: 'SSN',            page: 1, top: 34.2, left: 19.6, width: 26.1, height: H, color: BLOOM.blue },
+  { label: 'Gender ✓',       page: 1, top: 34.2, left: 46.1, width:  2.1, height: H, color: BLOOM.blue },
+  { label: 'DOB',            page: 1, top: 25.4, left: 70.3, width: 21.2, height: H, color: BLOOM.blue },
+  { label: 'Citizenship',    page: 1, top: 27.1, left: 70.3, width: 21.2, height: H, color: BLOOM.blue },
+  { label: 'Email',          page: 1, top: 32.4, left: 70.3, width: 21.2, height: H, color: BLOOM.blue },
+  { label: 'Phone',          page: 1, top: 34.2, left: 70.3, width: 21.2, height: H, color: BLOOM.blue },
+  // ── Page 1 · Owner ────────────────────────────────────────────────────────
+  { label: 'Owner First',    page: 1, top: 48.6, left: 19.6, width: 24.5, height: H, color: BLOOM.blue },
+  { label: 'Owner Middle',   page: 1, top: 50.4, left: 19.6, width: 24.5, height: H, color: BLOOM.blue },
+  { label: 'Owner Last',     page: 1, top: 52.1, left: 19.6, width: 24.5, height: H, color: BLOOM.blue },
+  { label: 'Owner Address',  page: 1, top: 53.9, left: 19.6, width: 24.5, height: H, color: BLOOM.blue },
+  { label: 'Owner City',     page: 1, top: 55.7, left: 19.6, width: 16.3, height: H, color: BLOOM.blue },
+  { label: 'Owner State',    page: 1, top: 55.7, left: 36.3, width:  7.0, height: H, color: BLOOM.blue },
+  { label: 'Owner Zip',      page: 1, top: 55.7, left: 43.6, width: 10.3, height: H, color: BLOOM.blue },
+  { label: 'Owner SSN',      page: 1, top: 57.4, left: 19.6, width: 26.1, height: H, color: BLOOM.blue },
+  { label: 'Owner DOB',      page: 1, top: 50.4, left: 70.3, width: 21.2, height: H, color: BLOOM.blue },
+  { label: 'Owner Email',    page: 1, top: 55.7, left: 70.3, width: 21.2, height: H, color: BLOOM.blue },
+  { label: 'Owner Phone',    page: 1, top: 57.4, left: 70.3, width: 21.2, height: H, color: BLOOM.blue },
+  // ── Page 2 · Primary Beneficiary ─────────────────────────────────────────
+  { label: 'Primary ✓',      page: 2, top: 22.2, left: 10.6, width:  2.1, height: H, color: BLOOM.blue },
+  { label: '100%',           page: 2, top: 22.2, left: 37.6, width:  6.5, height: H, color: BLOOM.blue },
+  { label: 'Bene First',     page: 2, top: 24.0, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Bene Middle',    page: 2, top: 25.8, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Bene Last',      page: 2, top: 27.5, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Bene SSN',       page: 2, top: 29.3, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Bene DOB',       page: 2, top: 31.1, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Bene Address',   page: 2, top: 24.0, left: 60.5, width: 31.0, height: H, color: BLOOM.blue },
+  { label: 'Bene City',      page: 2, top: 25.8, left: 60.5, width: 21.2, height: H, color: BLOOM.blue },
+  { label: 'Relationship',   page: 2, top: 29.3, left: 60.5, width: 31.0, height: H, color: BLOOM.blue },
+  { label: 'Phone',          page: 2, top: 31.1, left: 60.5, width: 31.0, height: H, color: BLOOM.blue },
+  // ── Page 2 · Contingent Beneficiary ──────────────────────────────────────
+  { label: 'Contingent ✓',   page: 2, top: 33.5, left: 21.2, width:  2.1, height: H, color: BLOOM.blue },
+  { label: 'Cont. First',    page: 2, top: 35.2, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Cont. Middle',   page: 2, top: 37.0, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Cont. Last',     page: 2, top: 38.8, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Cont. SSN',      page: 2, top: 40.5, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Cont. DOB',      page: 2, top: 42.3, left: 19.6, width: 27.8, height: H, color: BLOOM.orange },
+  // ── Page 2 · Plan Type ────────────────────────────────────────────────────
+  { label: 'Non-Qualified ✓',page: 2, top: 63.8, left: 10.6, width:  2.1, height: H, color: BLOOM.blue },
+  // ── Page 3 · Replacements ─────────────────────────────────────────────────
+  { label: 'No ✓',           page: 3, top: 13.9, left: 57.5, width:  2.1, height: H, color: BLOOM.blue },
+  { label: 'No ✓',           page: 3, top: 15.7, left: 57.5, width:  2.1, height: H, color: BLOOM.blue },
+  // ── Page 3 · Initial Purchase Payment ────────────────────────────────────
+  { label: '$100,000',       page: 3, top: 27.8, left: 11.4, width: 18.0, height: H, color: BLOOM.blue },
+  { label: 'Contribution ✓', page: 3, top: 27.8, left: 29.9, width:  2.1, height: H, color: BLOOM.blue },
+  { label: 'Tax Year 2026',  page: 3, top: 27.8, left: 40.0, width:  7.4, height: H, color: BLOOM.blue },
+  // ── Page 4 · DCA ──────────────────────────────────────────────────────────
+  { label: 'Fixed Acct ✓',   page: 4, top: 22.7, left: 35.1, width:  2.1, height: H, color: BLOOM.blue },
+  // ── Page 8 · Representative ───────────────────────────────────────────────
+  { label: 'Rep First',      page: 8, top: 36.6, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Rep Middle',     page: 8, top: 38.4, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Rep Last',       page: 8, top: 40.2, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'Firm',           page: 8, top: 41.9, left: 19.6, width: 37.6, height: H, color: BLOOM.blue },
+  { label: 'Phone',          page: 8, top: 43.7, left: 19.6, width: 27.8, height: H, color: BLOOM.blue },
+  { label: 'NPN',            page: 8, top: 36.6, left: 60.5, width: 31.0, height: H, color: BLOOM.blue },
+  { label: 'State License',  page: 8, top: 38.4, left: 60.5, width: 31.0, height: H, color: BLOOM.blue },
+  { label: 'Acct Number',    page: 8, top: 40.2, left: 60.5, width: 31.0, height: H, color: BLOOM.blue },
+  { label: 'Commission %',   page: 8, top: 41.9, left: 60.5, width:  8.2, height: H, color: BLOOM.blue },
+  { label: 'Date Signed',    page: 8, top: 47.3, left: 65.4, width: 26.1, height: 2.3, color: BLOOM.blue },
 ];
 
 interface Props {

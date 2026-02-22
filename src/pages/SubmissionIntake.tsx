@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PdfDocumentViewer from '../components/PdfDocumentViewer';
 import {
-  Box, Typography, Paper, Button, Stepper, Step, StepLabel,
+  Box, Typography, Paper, Button, Stepper, Step, StepLabel, Tabs, Tab,
   TextField, MenuItem, Chip, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, LinearProgress, Alert, Dialog,
   DialogTitle, DialogContent, DialogActions, Divider,
@@ -15,7 +15,7 @@ import {
 } from '@mui/icons-material';
 import { BLOOM } from '../theme';
 
-const STEPS = ['Upload ACORD Forms', 'Supporting Documents', 'Review AI-Extracted Data', 'Review & Submit'];
+const STEPS = ['Upload Forms', 'Classify Application', 'Review Extracted Data', 'Review & Submit'];
 
 // ── Demo file ─────────────────────────────────────────────────────────────────
 interface UploadedFile {
@@ -116,8 +116,7 @@ const DEMO_EXTRACTED: ExtractedData = {
   dateSigned: '02/10/2026',
 };
 
-// const FORM_TYPE_OPTIONS = ['ACORD 103 — Life Application', 'ACORD 104 — Life Supplement', 'ACORD 65 — Annuity Application'];
-const DOC_TYPE_OPTIONS   = ['APS', 'Paramedical Results', 'Financial Statement', 'Blood Profile', 'Other'];
+const DOC_TYPE_OPTIONS = ['APS', 'Paramedical Results', 'Financial Statement', 'Blood Profile', 'Other'];
 
 // ── Small sub-components ──────────────────────────────────────────────────────
 function FieldRow({
@@ -126,19 +125,41 @@ function FieldRow({
   onChange,
   error,
   lowConf,
+  confidence,
+  required,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   error?: string;
   lowConf?: boolean;
+  confidence?: number;
+  required?: boolean;
 }) {
+  const isLowConf = lowConf || (confidence !== undefined && confidence < 80);
+  const confColor = confidence === undefined ? BLOOM.grey
+    : confidence >= 90 ? BLOOM.green
+    : confidence >= 75 ? BLOOM.orange
+    : BLOOM.red;
+  const confBg = confidence === undefined ? BLOOM.canvas
+    : confidence >= 90 ? BLOOM.greenPale
+    : confidence >= 75 ? BLOOM.orangePale
+    : BLOOM.redPale;
+
   return (
     <Box sx={{ mb: 1.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.375 }}>
-        <Typography sx={{ fontSize: '0.6875rem', fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{label}</Typography>
+        <Typography sx={{ fontSize: '0.6875rem', fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          {label}{required && <Box component="span" sx={{ color: BLOOM.red, ml: 0.25 }}>*</Box>}
+        </Typography>
+        {confidence !== undefined && (
+          <Chip size="small" label={`${confidence}%`} sx={{
+            height: 16, fontSize: '0.5625rem', ml: 0.25,
+            bgcolor: confBg, color: confColor,
+            '& .MuiChip-label': { px: 0.75, lineHeight: 1 },
+          }} />
+        )}
         {error && <Error sx={{ fontSize: 13, color: BLOOM.red }} />}
-        {!error && lowConf && <Warning sx={{ fontSize: 13, color: BLOOM.orange }} />}
       </Box>
       <TextField
         size="small"
@@ -146,12 +167,12 @@ function FieldRow({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         error={!!error}
-        helperText={error || (lowConf ? 'Low confidence — verify' : undefined)}
+        helperText={error || (isLowConf ? 'Low confidence — verify' : undefined)}
         FormHelperTextProps={{ sx: { fontSize: '0.6875rem', color: error ? BLOOM.red : BLOOM.orange, mt: 0.25 } }}
         sx={{
           '& .MuiOutlinedInput-root': {
             fontSize: '0.8125rem',
-            bgcolor: error ? BLOOM.redPale : lowConf ? BLOOM.orangePale : 'background.paper',
+            bgcolor: error ? BLOOM.redPale : isLowConf ? BLOOM.orangePale : 'background.paper',
           },
         }}
       />
@@ -159,15 +180,6 @@ function FieldRow({
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <Typography sx={{
-      fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase',
-      letterSpacing: '0.75px', color: BLOOM.blue, mt: 2, mb: 1,
-      pb: 0.5, borderBottom: `1px solid ${BLOOM.border}`,
-    }}>{children}</Typography>
-  );
-}
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function SubmissionIntake() {
@@ -180,6 +192,7 @@ export default function SubmissionIntake() {
   const [successOpen, setSuccessOpen] = useState(false);
   const [dragOverAcord, setDragOverAcord] = useState(false);
   const [dragOverSupporting, setDragOverSupporting] = useState(false);
+  const [step3Tab, setStep3Tab] = useState(0);
 
   const acordInputRef = useRef<HTMLInputElement>(null);
   const supportingInputRef = useRef<HTMLInputElement>(null);
@@ -251,15 +264,15 @@ export default function SubmissionIntake() {
 
   const handleSuccessClose = () => {
     setSuccessOpen(false);
-    navigate('/workbench/NB-2026-LA-002');
+    navigate('/workbench/NB-2026-VA-001');
   };
 
-  // ── Step 1: Upload ACORD ──────────────────────────────────────────────────
+  // ── Step 1: Upload Forms ───────────────────────────────────────────────────
   const renderStep1 = () => (
     <Box>
-      <Typography variant="h6" sx={{ mb: 0.5 }}>Upload Insurance Application Forms</Typography>
+      <Typography variant="h6" sx={{ mb: 0.5 }}>Upload Application Forms</Typography>
       <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', mb: 2.5 }}>
-        Upload the ACORD forms from the applicant. AI will automatically extract and pre-fill all fields.
+        Upload the application forms from the applicant. AI will automatically classify and extract all fields.
       </Typography>
 
       {/* Demo load chip */}
@@ -297,9 +310,9 @@ export default function SubmissionIntake() {
         }}
       >
         <CloudUpload sx={{ fontSize: 40, color: dragOverAcord ? BLOOM.blue : BLOOM.grey, mb: 1 }} />
-        <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Drag &amp; drop ACORD forms here or click to browse</Typography>
+        <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Drag &amp; drop application forms here or click to browse</Typography>
         <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-          Supported: ACORD 103 (Life Application) · ACORD 104 (Life Supplement) · ACORD 65 (Annuity Application)
+          Life · Annuity · Disability · Long-Term Care · PDF format
         </Typography>
       </Paper>
 
@@ -311,14 +324,14 @@ export default function SubmissionIntake() {
           sx={{ mb: 2, bgcolor: BLOOM.bluePale, color: BLOOM.blue, border: `1px solid ${BLOOM.blue + '44'}` }}
         >
           <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
-            ✨ AI extraction running on Bloom Prime Options application — estimated completion 2 min...
+            ✨ AI classification &amp; extraction running — estimated completion 2 min...
           </Typography>
           <LinearProgress sx={{ mt: 1, bgcolor: BLOOM.border, '& .MuiLinearProgress-bar': { bgcolor: BLOOM.blue } }} />
         </Alert>
       )}
       {aiComplete && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          AI extraction complete — 34 of 35 fields extracted with 97% confidence.
+          Classification complete — application type confirmed. Proceed to review the classification results.
         </Alert>
       )}
 
@@ -359,193 +372,291 @@ export default function SubmissionIntake() {
     </Box>
   );
 
-  // ── Step 2: Supporting docs ───────────────────────────────────────────────
+  // ── Step 2: Classify Application ─────────────────────────────────────────
   const renderStep2 = () => (
     <Box>
-      <Typography variant="h6" sx={{ mb: 0.5 }}>Upload Supporting Documents</Typography>
-      <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', mb: 2 }}>
-        Upload APS, paramedical results, and other supporting documents while AI continues processing the ACORD form.
+      <Typography variant="h6" sx={{ mb: 0.25 }}>Classify Application</Typography>
+      <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', mb: 2.5 }}>
+        AI has analyzed the uploaded form and identified the application type. Confirm the classification before proceeding to data extraction.
       </Typography>
 
+      {/* Still running */}
       {aiRunning && (
         <Alert severity="info" icon={<AutoAwesome />} sx={{ mb: 2, bgcolor: BLOOM.bluePale, color: BLOOM.blue, border: `1px solid ${BLOOM.blue + '44'}` }}>
-          ✨ AI extraction running on Bloom Prime Options application — estimated completion 2 min...
+          <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>✨ AI classification in progress — analyzing document structure...</Typography>
           <LinearProgress sx={{ mt: 0.75, bgcolor: BLOOM.border, '& .MuiLinearProgress-bar': { bgcolor: BLOOM.blue } }} />
         </Alert>
       )}
-      {aiComplete && (
-        <Alert severity="success" sx={{ mb: 2 }}>AI extraction complete — ready to review on next step.</Alert>
+
+      {/* No file uploaded yet */}
+      {!aiRunning && !aiComplete && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Upload application forms in Step 1 to begin classification.
+        </Alert>
       )}
 
-      {/* Drop zone */}
-      <input
-        ref={supportingInputRef}
-        type="file"
-        accept=".pdf,.PDF,.doc,.docx"
-        multiple
-        style={{ display: 'none' }}
-        onChange={(e) => handleSupportingFiles(e.target.files)}
-      />
-      <Paper
-        onClick={() => supportingInputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setDragOverSupporting(true); }}
-        onDragLeave={() => setDragOverSupporting(false)}
-        onDrop={(e) => { e.preventDefault(); setDragOverSupporting(false); handleSupportingFiles(e.dataTransfer.files); }}
-        sx={{
-          p: 4, textAlign: 'center', cursor: 'pointer',
-          border: `2px dashed ${dragOverSupporting ? BLOOM.blue : BLOOM.border}`,
-          bgcolor: dragOverSupporting ? BLOOM.bluePale : BLOOM.canvas,
-          transition: 'all 0.15s', mb: 2,
-          '&:hover': { borderColor: BLOOM.blue, bgcolor: BLOOM.bluePale },
-        }}
-      >
-        <CloudUpload sx={{ fontSize: 40, color: dragOverSupporting ? BLOOM.blue : BLOOM.grey, mb: 1 }} />
-        <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Upload Supporting Documents</Typography>
-        <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-          APS · Paramedical Results · Financial Statements · Blood Profile · Other
-        </Typography>
-      </Paper>
-
-      {/* Demo: add a supporting doc */}
-      <Box sx={{ mb: 2 }}>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<DescriptionOutlined />}
-          onClick={() => setSupportingFiles([{ id: 'sup-1', name: 'APS_Rodriguez_DrSmith.pdf', formType: 'APS', size: '0.8 MB', date: '2026-02-22' }])}
-          sx={{ color: BLOOM.blue, borderColor: BLOOM.blue }}
-        >
-          + Add demo APS
-        </Button>
-      </Box>
-
-      {supportingFiles.length > 0 && (
-        <TableContainer component={Paper}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                {['File Name', 'Type', 'Size', 'Date', 'Action'].map((h) => (
-                  <TableCell key={h} sx={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'text.secondary', bgcolor: BLOOM.canvas }}>{h}</TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {supportingFiles.map((f) => (
-                <TableRow key={f.id}>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                      <DescriptionOutlined sx={{ fontSize: 16, color: BLOOM.blue }} />
-                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{f.name}</Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <TextField
-                      select size="small" value={f.formType}
-                      onChange={() => {}}
-                      sx={{ width: 180, '& .MuiInputBase-input': { fontSize: '0.8125rem', py: 0.5 } }}
-                    >
-                      {DOC_TYPE_OPTIONS.map((o) => <MenuItem key={o} value={o} sx={{ fontSize: '0.8125rem' }}>{o}</MenuItem>)}
-                    </TextField>
-                  </TableCell>
-                  <TableCell sx={{ fontSize: '0.8125rem' }}>{f.size}</TableCell>
-                  <TableCell sx={{ fontSize: '0.8125rem' }}>{f.date}</TableCell>
-                  <TableCell>
-                    <IconButton size="small" onClick={() => setSupportingFiles([])} sx={{ color: BLOOM.red }}>
-                      <DeleteOutline fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
+      {/* Classification results */}
+      {aiComplete && (
+        <>
+          {/* AI result banner */}
+          <Paper sx={{ p: 2, mb: 2.5, borderLeft: `3px solid ${BLOOM.green}`, bgcolor: BLOOM.greenPale }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <AutoAwesome sx={{ fontSize: 16, color: BLOOM.green }} />
+              <Typography sx={{ fontWeight: 700, color: BLOOM.green, fontSize: '0.875rem' }}>
+                Application Classified — 99% confidence
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
+              {([
+                ['Document Type', 'Variable Annuity Application'],
+                ['Product',       'Bloom Prime Options'],
+                ['Issuer',        'Bloom Insurance'],
+                ['Applicant',     'Sam W Smith'],
+                ['Plan Type',     'Non-Qualified'],
+                ['Date Signed',   '02/10/2026'],
+              ] as [string, string][]).map(([k, v]) => (
+                <Box key={k} sx={{ display: 'flex', gap: 1 }}>
+                  <Typography sx={{ fontSize: '0.75rem', color: BLOOM.textSecondary, width: 110, flexShrink: 0 }}>{k}</Typography>
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 600 }}>{v}</Typography>
+                </Box>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </Box>
+          </Paper>
+
+          {/* Sections detected */}
+          <Paper sx={{ p: 2, mb: 2.5 }}>
+            <Typography sx={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'text.secondary', mb: 1.25 }}>
+              Sections Detected
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {[
+                'Annuitant Information', 'Owner Information', 'Beneficiary Designation',
+                'Plan Type Selection', 'Initial Purchase Payment', 'Benefit Riders',
+                'Dollar Cost Averaging', 'Client Acknowledgements', 'Representative Info',
+              ].map((section) => (
+                <Chip
+                  key={section}
+                  label={section}
+                  size="small"
+                  icon={<CheckCircle sx={{ fontSize: 12 }} />}
+                  sx={{
+                    fontSize: '0.6875rem', bgcolor: BLOOM.greenPale, color: BLOOM.green,
+                    border: `1px solid ${BLOOM.green}44`,
+                    '& .MuiChip-icon': { color: BLOOM.green },
+                  }}
+                />
+              ))}
+            </Box>
+          </Paper>
+
+          {/* Confirm / override application type */}
+          <Paper sx={{ p: 2, mb: 2.5 }}>
+            <Typography sx={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'text.secondary', mb: 1.25 }}>
+              Confirm Application Type
+            </Typography>
+            <TextField
+              select size="small" defaultValue="Variable Annuity"
+              sx={{ width: 280, '& .MuiInputBase-input': { fontSize: '0.8125rem' } }}
+              onChange={() => {}}
+            >
+              {['Variable Annuity', 'Fixed Annuity', 'Indexed Annuity', 'Term Life', 'Whole Life', 'Universal Life'].map((t) => (
+                <MenuItem key={t} value={t} sx={{ fontSize: '0.8125rem' }}>{t}</MenuItem>
+              ))}
+            </TextField>
+          </Paper>
+
+          {/* Supporting documents — compact, optional */}
+          <Paper sx={{ p: 2 }}>
+            <Typography sx={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'text.secondary', mb: 1 }}>
+              Supporting Documents <Typography component="span" sx={{ fontSize: '0.6875rem', fontWeight: 400, color: BLOOM.textSecondary, textTransform: 'none', letterSpacing: 0 }}>— optional</Typography>
+            </Typography>
+            <input
+              ref={supportingInputRef}
+              type="file"
+              accept=".pdf,.PDF,.doc,.docx"
+              multiple
+              style={{ display: 'none' }}
+              onChange={(e) => handleSupportingFiles(e.target.files)}
+            />
+            <Box
+              onClick={() => supportingInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragOverSupporting(true); }}
+              onDragLeave={() => setDragOverSupporting(false)}
+              onDrop={(e) => { e.preventDefault(); setDragOverSupporting(false); handleSupportingFiles(e.dataTransfer.files); }}
+              sx={{
+                p: 2, textAlign: 'center', cursor: 'pointer', borderRadius: '6px',
+                border: `1.5px dashed ${dragOverSupporting ? BLOOM.blue : BLOOM.border}`,
+                bgcolor: dragOverSupporting ? BLOOM.bluePale : BLOOM.canvas,
+                transition: 'all 0.15s', mb: supportingFiles.length > 0 ? 1.5 : 0,
+                '&:hover': { borderColor: BLOOM.blue, bgcolor: BLOOM.bluePale },
+              }}
+            >
+              <Typography sx={{ fontSize: '0.8125rem', color: BLOOM.textSecondary }}>
+                Drop APS, paramedical results, or other docs here · <Box component="span" sx={{ color: BLOOM.blue, fontWeight: 600 }}>click to browse</Box>
+              </Typography>
+            </Box>
+
+            {supportingFiles.length > 0 && (
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      {['File Name', 'Type', 'Size', 'Date', ''].map((h) => (
+                        <TableCell key={h} sx={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'text.secondary', bgcolor: BLOOM.canvas }}>{h}</TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {supportingFiles.map((f) => (
+                      <TableRow key={f.id}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                            <DescriptionOutlined sx={{ fontSize: 16, color: BLOOM.blue }} />
+                            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>{f.name}</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            select size="small" value={f.formType} onChange={() => {}}
+                            sx={{ width: 180, '& .MuiInputBase-input': { fontSize: '0.8125rem', py: 0.5 } }}
+                          >
+                            {DOC_TYPE_OPTIONS.map((o) => <MenuItem key={o} value={o} sx={{ fontSize: '0.8125rem' }}>{o}</MenuItem>)}
+                          </TextField>
+                        </TableCell>
+                        <TableCell sx={{ fontSize: '0.8125rem' }}>{f.size}</TableCell>
+                        <TableCell sx={{ fontSize: '0.8125rem' }}>{f.date}</TableCell>
+                        <TableCell>
+                          <IconButton size="small" onClick={() => setSupportingFiles([])} sx={{ color: BLOOM.red }}>
+                            <DeleteOutline fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Paper>
+        </>
       )}
     </Box>
   );
 
   // ── Step 3: Review extracted data ─────────────────────────────────────────
+  const STEP3_TABS = ['Annuitant / Owner', 'Plan & Payment', 'Riders', 'Beneficiary', 'Representative'];
+
   const renderStep3 = () => (
     <Box sx={{ display: 'flex', gap: 2.5 }}>
-      {/* Left: editable form — scrolls independently */}
+      {/* Left: tabbed form — scrolls independently */}
       <Box sx={{ flex: 1, maxHeight: 'calc(100vh - 280px)', overflowY: 'auto', pr: 0.5 }}>
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="h6" sx={{ mb: 0.25 }}>Review AI-Extracted Data</Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-            Review and correct any fields. Red = validation error · Orange = low AI confidence.
-          </Typography>
+
+        {/* Header + confidence summary */}
+        <Box sx={{ mb: 1.5 }}>
+          <Typography variant="h6" sx={{ mb: 0.375 }}>Review Extracted Data</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>34 fields extracted ·</Typography>
+            <Chip size="small" label="32 confirmed"
+              sx={{ height: 18, fontSize: '0.6875rem', bgcolor: BLOOM.greenPale, color: BLOOM.green }} />
+            <Chip size="small" label="2 review"
+              sx={{ height: 18, fontSize: '0.6875rem', bgcolor: BLOOM.orangePale, color: BLOOM.orange }} />
+            <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>· * required · % = AI confidence</Typography>
+          </Box>
         </Box>
 
-        {/* Validation notice */}
-        <Alert severity="warning" sx={{ mb: 2 }} icon={<Warning />}>
+        {/* Warning banner */}
+        <Alert severity="warning" sx={{ mb: 1.5 }} icon={<Warning />}>
           <Typography sx={{ fontSize: '0.75rem' }}>
-            Contingent beneficiary address not provided — follow-up may be required before issue.
+            Contingent beneficiary address not provided — follow-up required before issue.
           </Typography>
         </Alert>
 
-        {/* Annuitant / Owner */}
-        <SectionTitle>1. Annuitant / Owner</SectionTitle>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
-          <FieldRow label="Full Name"      {...field('fullName')} />
-          <FieldRow label="Date of Birth"  {...field('dob')} />
-          <FieldRow label="Gender"         {...field('gender')} />
-          <FieldRow label="SSN (masked)"   {...field('ssn')} />
-          <FieldRow label="Address"        {...field('address')} />
-          <FieldRow label="City"           {...field('city')} />
-          <FieldRow label="State"          {...field('state')} />
-          <FieldRow label="Zip Code"       {...field('zipCode')} />
-          <FieldRow label="Email"          {...field('email')} />
-          <FieldRow label="Phone"          {...field('phone')} />
-          <Box sx={{ gridColumn: '1 / -1' }}>
-            <FieldRow label="Country of Citizenship" {...field('citizenship')} />
-          </Box>
+        {/* Section tabs */}
+        <Box sx={{ borderBottom: `1px solid ${BLOOM.border}`, mb: 2 }}>
+          <Tabs
+            value={step3Tab}
+            onChange={(_, v) => setStep3Tab(v)}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              minHeight: 36,
+              '& .MuiTab-root': { fontSize: '0.75rem', minHeight: 36, py: 0.75, textTransform: 'none' },
+              '& .MuiTabs-indicator': { bgcolor: BLOOM.blue },
+              '& .Mui-selected': { color: `${BLOOM.blue} !important` },
+            }}
+          >
+            {STEP3_TABS.map((label) => <Tab key={label} label={label} />)}
+          </Tabs>
         </Box>
 
-        {/* Plan & Payment */}
-        <SectionTitle>2. Plan &amp; Payment</SectionTitle>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
-          <FieldRow label="Plan Type"          {...field('planType')} />
-          <FieldRow label="Tax Year"           {...field('taxYear')} />
-          <Box sx={{ gridColumn: '1 / -1' }}>
-            <FieldRow label="Product Name" {...field('productName')} />
+        {/* Tab 0: Annuitant / Owner */}
+        {step3Tab === 0 && (
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
+            <FieldRow label="Full Name"      required confidence={99} {...field('fullName')} />
+            <FieldRow label="Date of Birth"  required confidence={99} {...field('dob')} />
+            <FieldRow label="Gender"         required confidence={99} {...field('gender')} />
+            <FieldRow label="SSN (masked)"   required confidence={95} {...field('ssn')} />
+            <FieldRow label="Address"        required confidence={98} {...field('address')} />
+            <FieldRow label="City"           required confidence={97} {...field('city')} />
+            <FieldRow label="State"          required confidence={99} {...field('state')} />
+            <FieldRow label="Zip Code"       required confidence={97} {...field('zipCode')} />
+            <FieldRow label="Email"                   confidence={88} {...field('email')} />
+            <FieldRow label="Phone"                   confidence={92} {...field('phone')} />
+            <Box sx={{ gridColumn: '1 / -1' }}>
+              <FieldRow label="Country of Citizenship" required confidence={99} {...field('citizenship')} />
+            </Box>
           </Box>
-          <FieldRow label="Initial Purchase Payment" {...field('purchasePayment')} />
-          <FieldRow label="DCA Source Fund"          {...field('dcaSource')} />
-          <Box sx={{ gridColumn: '1 / -1' }}>
-            <FieldRow label="Existing Policy Replacements" {...field('replacements')} />
+        )}
+
+        {/* Tab 1: Plan & Payment */}
+        {step3Tab === 1 && (
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
+            <FieldRow label="Plan Type"      required confidence={99} {...field('planType')} />
+            <FieldRow label="Tax Year"                confidence={97} {...field('taxYear')} />
+            <Box sx={{ gridColumn: '1 / -1' }}>
+              <FieldRow label="Product Name" required confidence={99} {...field('productName')} />
+            </Box>
+            <FieldRow label="Initial Purchase Payment" required confidence={99} {...field('purchasePayment')} />
+            <FieldRow label="DCA Source Fund"                   confidence={94} {...field('dcaSource')} />
+            <Box sx={{ gridColumn: '1 / -1' }}>
+              <FieldRow label="Existing Policy Replacements" required confidence={99} {...field('replacements')} />
+            </Box>
           </Box>
-        </Box>
+        )}
 
-        {/* Riders */}
-        <SectionTitle>3. Benefit Riders</SectionTitle>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
-          <FieldRow label="Living Benefit Rider" {...field('livingBenefitRider')} />
-          <FieldRow label="Death Benefit Rider"  {...field('deathBenefitRider')} />
-        </Box>
-
-        {/* Beneficiary */}
-        <SectionTitle>4. Beneficiary</SectionTitle>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
-          <FieldRow label="Primary Beneficiary"  {...field('primaryBeneficiary')} />
-          <FieldRow label="Relationship"         {...field('primaryRelationship')} />
-          <FieldRow label="Percentage"           {...field('primaryPct')} />
-          <FieldRow label="Beneficiary DOB"      {...field('primaryDob')} />
-          <Box sx={{ gridColumn: '1 / -1' }}>
-            <FieldRow label="Primary SSN (masked)" {...field('primarySSN')} />
+        {/* Tab 2: Riders */}
+        {step3Tab === 2 && (
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
+            <FieldRow label="Living Benefit Rider" confidence={98} {...field('livingBenefitRider')} />
+            <FieldRow label="Death Benefit Rider"  confidence={98} {...field('deathBenefitRider')} />
           </Box>
-          <FieldRow label="Contingent Beneficiary" {...field('contingentBeneficiary')} lowConf />
-          <FieldRow label="Contingent DOB"         {...field('contingentDob')} />
-        </Box>
+        )}
 
-        {/* Representative */}
-        <SectionTitle>5. Representative</SectionTitle>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
-          <FieldRow label="Rep Name"       {...field('repName')} />
-          <FieldRow label="Firm"           {...field('repFirm')} />
-          <FieldRow label="Business Phone" {...field('repPhone')} />
-          <FieldRow label="NPN"            {...field('repNPN')} />
-          <FieldRow label="State License"  {...field('repLicenseId')} />
-          <FieldRow label="Date Signed"    {...field('dateSigned')} />
-        </Box>
+        {/* Tab 3: Beneficiary */}
+        {step3Tab === 3 && (
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
+            <FieldRow label="Primary Beneficiary"  required confidence={99} {...field('primaryBeneficiary')} />
+            <FieldRow label="Relationship"         required confidence={97} {...field('primaryRelationship')} />
+            <FieldRow label="Percentage"           required confidence={99} {...field('primaryPct')} />
+            <FieldRow label="Beneficiary DOB"               confidence={96} {...field('primaryDob')} />
+            <Box sx={{ gridColumn: '1 / -1' }}>
+              <FieldRow label="Primary SSN (masked)"        confidence={94} {...field('primarySSN')} />
+            </Box>
+            <FieldRow label="Contingent Beneficiary" confidence={78} lowConf {...field('contingentBeneficiary')} />
+            <FieldRow label="Contingent DOB"         confidence={88}        {...field('contingentDob')} />
+          </Box>
+        )}
+
+        {/* Tab 4: Representative */}
+        {step3Tab === 4 && (
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
+            <FieldRow label="Rep Name"       required confidence={97} {...field('repName')} />
+            <FieldRow label="Firm"                    confidence={96} {...field('repFirm')} />
+            <FieldRow label="Business Phone"          confidence={92} {...field('repPhone')} />
+            <FieldRow label="NPN"            required confidence={99} {...field('repNPN')} />
+            <FieldRow label="State License"           confidence={95} {...field('repLicenseId')} />
+            <FieldRow label="Date Signed"    required confidence={99} {...field('dateSigned')} />
+          </Box>
+        )}
       </Box>
 
       {/* Right: Real PDF viewer */}
@@ -641,7 +752,7 @@ export default function SubmissionIntake() {
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" sx={{ mb: 0.25 }}>New Submission — Life &amp; Annuity</Typography>
         <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-          AI-powered intake · Upload ACORD forms and let AI extract the data for you
+          AI-powered intake · Upload application forms and let AI classify and extract the data for you
         </Typography>
       </Box>
 
