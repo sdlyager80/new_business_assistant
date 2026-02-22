@@ -36,7 +36,6 @@ interface ExtractedData {
   city: string;
   state: string;
   zipCode: string;
-  premiumMode: string;
   email: string;
   phone: string;
   citizenship: string;
