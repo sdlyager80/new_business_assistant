@@ -27,6 +27,7 @@ interface UploadedFile {
 }
 
 interface ExtractedData {
+  // Annuitant / Owner
   fullName: string;
   dob: string;
   gender: string;
@@ -35,67 +36,85 @@ interface ExtractedData {
   city: string;
   state: string;
   zipCode: string;
-  occupation: string;
-  annualIncome: string;
-  productType: string;
-  faceAmount: string;
-  benefitPeriod: string;
   premiumMode: string;
-  riders: string;
-  preExisting: string;
-  medications: string;
-  hospitalizations: string;
-  surgeries: string;
-  familyHistory: string;
-  tobacco: string;
-  alcohol: string;
-  hazardous: string;
-  foreignTravel: string;
+  email: string;
+  phone: string;
+  citizenship: string;
+  // Plan & Payment
+  planType: string;
+  productName: string;
+  purchasePayment: string;
+  taxYear: string;
+  dcaSource: string;
+  replacements: string;
+  // Riders
+  livingBenefitRider: string;
+  deathBenefitRider: string;
+  // Primary Beneficiary
   primaryBeneficiary: string;
   primaryRelationship: string;
   primaryPct: string;
   primaryDob: string;
+  primarySSN: string;
+  // Contingent Beneficiary
   contingentBeneficiary: string;
+  contingentDob: string;
+  // Representative
+  repName: string;
+  repFirm: string;
+  repPhone: string;
+  repNPN: string;
+  repLicenseId: string;
+  dateSigned: string;
 }
 
 const DEMO_ACORD: UploadedFile = {
   id: 'demo-1',
-  name: 'ACORD_103_Rodriguez_Maria.pdf',
-  formType: 'ACORD 103 — Life Application',
-  size: '1.2 MB',
-  date: '2026-02-22',
+  name: 'Document_260218_184853 1 (1) 1.pdf',
+  formType: 'Bloom Prime Options — Variable Annuity Application',
+  size: '1.4 MB',
+  date: '2026-02-18',
 };
 
 const DEMO_EXTRACTED: ExtractedData = {
-  fullName: 'Maria Rodriguez',
-  dob: '1990-03-15',
-  gender: 'Female',
-  ssn: '***-**-4521',
-  address: '2847 Sunset Blvd',
-  city: 'Miami',
-  state: 'FL',
-  zipCode: '33101',
-  occupation: 'Registered Nurse',
-  annualIncome: '$72,000',
-  productType: 'Term Life — 20 Year',
-  faceAmount: '$500,000',
-  benefitPeriod: '20 Years',
-  premiumMode: 'Monthly',
-  riders: 'Waiver of Premium',
-  preExisting: 'None',
-  medications: 'None',
-  hospitalizations: 'None',
-  surgeries: 'None',
-  familyHistory: 'Father — Hypertension (controlled)',
-  tobacco: 'Never',
-  alcohol: 'Social (< 5 drinks/week)',
-  hazardous: 'None disclosed',
-  foreignTravel: 'None in past 12 months',
-  primaryBeneficiary: 'Carlos Rodriguez',
+  // Annuitant / Owner
+  fullName: 'Sam W Smith',
+  dob: '01/01/2000',
+  gender: 'Male',
+  ssn: '***-**-4433',
+  address: '1234 Main St',
+  city: 'Anytown',
+  state: 'SC',
+  zipCode: '29410',
+  email: 'Sam@SamSam.com',
+  phone: '(555) 333-1233',
+  citizenship: 'United States',
+  // Plan & Payment
+  planType: 'Non-Qualified',
+  productName: 'Bloom Prime Options — Variable Annuity',
+  purchasePayment: '$100,000',
+  taxYear: '2026',
+  dcaSource: 'Fixed Account',
+  replacements: 'No',
+  // Riders
+  livingBenefitRider: 'None elected',
+  deathBenefitRider: 'None elected',
+  // Primary Beneficiary
+  primaryBeneficiary: 'John Smith',
   primaryRelationship: 'Spouse',
   primaryPct: '100%',
-  primaryDob: '1988-06-20',
-  contingentBeneficiary: 'Elena Rodriguez (Daughter)',
+  primaryDob: '07/01/2001',
+  primarySSN: '***-**-1111',
+  // Contingent Beneficiary
+  contingentBeneficiary: 'Jake James John',
+  contingentDob: '03/07/1997',
+  // Representative
+  repName: 'Mary Ann Blase',
+  repFirm: 'Blase Investments',
+  repPhone: '(315) 776-1111',
+  repNPN: '1234',
+  repLicenseId: '8160 PP 4401',
+  dateSigned: '02/10/2026',
 };
 
 // const FORM_TYPE_OPTIONS = ['ACORD 103 — Life Application', 'ACORD 104 — Life Supplement', 'ACORD 65 — Annuity Application'];
@@ -197,11 +216,12 @@ export default function SubmissionIntake() {
   // Extracted data state
   const [data, setData] = useState<ExtractedData>({
     fullName: '', dob: '', gender: '', ssn: '', address: '', city: '', state: '', zipCode: '',
-    occupation: '', annualIncome: '', productType: '', faceAmount: '', benefitPeriod: '',
-    premiumMode: '', riders: '', preExisting: '', medications: '', hospitalizations: '',
-    surgeries: '', familyHistory: '', tobacco: '', alcohol: '', hazardous: '',
-    foreignTravel: '', primaryBeneficiary: '', primaryRelationship: '', primaryPct: '',
-    primaryDob: '', contingentBeneficiary: '',
+    email: '', phone: '', citizenship: '',
+    planType: '', productName: '', purchasePayment: '', taxYear: '', dcaSource: '', replacements: '',
+    livingBenefitRider: '', deathBenefitRider: '',
+    primaryBeneficiary: '', primaryRelationship: '', primaryPct: '', primaryDob: '', primarySSN: '',
+    contingentBeneficiary: '', contingentDob: '',
+    repName: '', repFirm: '', repPhone: '', repNPN: '', repLicenseId: '', dateSigned: '',
   });
 
   const field = (key: keyof ExtractedData) => ({
@@ -247,7 +267,7 @@ export default function SubmissionIntake() {
       <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
         <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>Quick demo:</Typography>
         <Chip
-          label="Load Maria Rodriguez demo"
+          label="Load Sam Smith demo"
           size="small"
           icon={<AutoAwesome sx={{ fontSize: 13 }} />}
           onClick={loadDemo}
@@ -292,14 +312,14 @@ export default function SubmissionIntake() {
           sx={{ mb: 2, bgcolor: BLOOM.bluePale, color: BLOOM.blue, border: `1px solid ${BLOOM.blue + '44'}` }}
         >
           <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
-            ✨ AI extraction running on ACORD 103 — estimated completion 2 min...
+            ✨ AI extraction running on Bloom Prime Options application — estimated completion 2 min...
           </Typography>
           <LinearProgress sx={{ mt: 1, bgcolor: BLOOM.border, '& .MuiLinearProgress-bar': { bgcolor: BLOOM.blue } }} />
         </Alert>
       )}
       {aiComplete && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          AI extraction complete — 91 of 92 fields extracted with 98% confidence.
+          AI extraction complete — 34 of 35 fields extracted with 97% confidence.
         </Alert>
       )}
 
@@ -350,7 +370,7 @@ export default function SubmissionIntake() {
 
       {aiRunning && (
         <Alert severity="info" icon={<AutoAwesome />} sx={{ mb: 2, bgcolor: BLOOM.bluePale, color: BLOOM.blue, border: `1px solid ${BLOOM.blue + '44'}` }}>
-          ✨ AI extraction running on ACORD 103 — estimated completion 2 min...
+          ✨ AI extraction running on Bloom Prime Options application — estimated completion 2 min...
           <LinearProgress sx={{ mt: 0.75, bgcolor: BLOOM.border, '& .MuiLinearProgress-bar': { bgcolor: BLOOM.blue } }} />
         </Alert>
       )}
@@ -456,81 +476,86 @@ export default function SubmissionIntake() {
           </Typography>
         </Box>
 
-        {/* Validation errors banner */}
-        <Alert severity="error" sx={{ mb: 1.5 }} icon={<Error />}>
-          <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>1 validation error found</Typography>
-          <Typography sx={{ fontSize: '0.75rem' }}>
-            DOB inconsistency — application shows 1990-03-15 but ID shows 1990-05-13. Please verify.
-          </Typography>
-        </Alert>
+        {/* Validation notice */}
         <Alert severity="warning" sx={{ mb: 2 }} icon={<Warning />}>
           <Typography sx={{ fontSize: '0.75rem' }}>
-            Income field — unable to clearly extract from document. Manual entry required.
+            Contingent beneficiary address not provided — follow-up may be required before issue.
           </Typography>
         </Alert>
 
-        {/* Proposed Insured */}
-        <SectionTitle>1. Proposed Insured</SectionTitle>
+        {/* Annuitant / Owner */}
+        <SectionTitle>1. Annuitant / Owner</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
           <FieldRow label="Full Name"      {...field('fullName')} />
-          <FieldRow label="Date of Birth"  {...field('dob')} error="DOB inconsistency — verify against ID" />
+          <FieldRow label="Date of Birth"  {...field('dob')} />
           <FieldRow label="Gender"         {...field('gender')} />
           <FieldRow label="SSN (masked)"   {...field('ssn')} />
           <FieldRow label="Address"        {...field('address')} />
           <FieldRow label="City"           {...field('city')} />
           <FieldRow label="State"          {...field('state')} />
           <FieldRow label="Zip Code"       {...field('zipCode')} />
-          <FieldRow label="Occupation"     {...field('occupation')} />
-          <FieldRow label="Annual Income"  {...field('annualIncome')} lowConf />
-        </Box>
-
-        {/* Coverage */}
-        <SectionTitle>2. Coverage Requested</SectionTitle>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
-          <FieldRow label="Product Type"   {...field('productType')} />
-          <FieldRow label="Face Amount"    {...field('faceAmount')} />
-          <FieldRow label="Benefit Period" {...field('benefitPeriod')} />
-          <FieldRow label="Premium Mode"   {...field('premiumMode')} />
+          <FieldRow label="Email"          {...field('email')} />
+          <FieldRow label="Phone"          {...field('phone')} />
           <Box sx={{ gridColumn: '1 / -1' }}>
-            <FieldRow label="Riders" {...field('riders')} />
+            <FieldRow label="Country of Citizenship" {...field('citizenship')} />
           </Box>
         </Box>
 
-        {/* Medical */}
-        <SectionTitle>3. Medical History</SectionTitle>
-        <FieldRow label="Pre-Existing Conditions" {...field('preExisting')} />
-        <FieldRow label="Current Medications"     {...field('medications')} />
-        <FieldRow label="Hospitalizations"        {...field('hospitalizations')} />
-        <FieldRow label="Surgeries"               {...field('surgeries')} />
-        <FieldRow label="Family History"          {...field('familyHistory')} />
-
-        {/* Lifestyle */}
-        <SectionTitle>4. Lifestyle</SectionTitle>
+        {/* Plan & Payment */}
+        <SectionTitle>2. Plan &amp; Payment</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
-          <FieldRow label="Tobacco Use"          {...field('tobacco')} />
-          <FieldRow label="Alcohol Consumption"  {...field('alcohol')} />
-          <FieldRow label="Hazardous Activities" {...field('hazardous')} />
-          <FieldRow label="Foreign Travel"       {...field('foreignTravel')} />
+          <FieldRow label="Plan Type"          {...field('planType')} />
+          <FieldRow label="Tax Year"           {...field('taxYear')} />
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <FieldRow label="Product Name" {...field('productName')} />
+          </Box>
+          <FieldRow label="Initial Purchase Payment" {...field('purchasePayment')} />
+          <FieldRow label="DCA Source Fund"          {...field('dcaSource')} />
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <FieldRow label="Existing Policy Replacements" {...field('replacements')} />
+          </Box>
+        </Box>
+
+        {/* Riders */}
+        <SectionTitle>3. Benefit Riders</SectionTitle>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
+          <FieldRow label="Living Benefit Rider" {...field('livingBenefitRider')} />
+          <FieldRow label="Death Benefit Rider"  {...field('deathBenefitRider')} />
         </Box>
 
         {/* Beneficiary */}
-        <SectionTitle>5. Beneficiary</SectionTitle>
+        <SectionTitle>4. Beneficiary</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
           <FieldRow label="Primary Beneficiary"  {...field('primaryBeneficiary')} />
           <FieldRow label="Relationship"         {...field('primaryRelationship')} />
           <FieldRow label="Percentage"           {...field('primaryPct')} />
           <FieldRow label="Beneficiary DOB"      {...field('primaryDob')} />
+          <Box sx={{ gridColumn: '1 / -1' }}>
+            <FieldRow label="Primary SSN (masked)" {...field('primarySSN')} />
+          </Box>
+          <FieldRow label="Contingent Beneficiary" {...field('contingentBeneficiary')} lowConf />
+          <FieldRow label="Contingent DOB"         {...field('contingentDob')} />
         </Box>
-        <FieldRow label="Contingent Beneficiary" {...field('contingentBeneficiary')} />
+
+        {/* Representative */}
+        <SectionTitle>5. Representative</SectionTitle>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, columnGap: 2 }}>
+          <FieldRow label="Rep Name"       {...field('repName')} />
+          <FieldRow label="Firm"           {...field('repFirm')} />
+          <FieldRow label="Business Phone" {...field('repPhone')} />
+          <FieldRow label="NPN"            {...field('repNPN')} />
+          <FieldRow label="State License"  {...field('repLicenseId')} />
+          <FieldRow label="Date Signed"    {...field('dateSigned')} />
+        </Box>
       </Box>
 
       {/* Right: Real PDF viewer */}
       <Box sx={{ width: 560, flexShrink: 0, position: 'sticky', top: 24, height: 'calc(100vh - 280px)' }}>
         <PdfDocumentViewer
           pdfUrl="/acord_application.pdf"
-          confidenceScore={98}
-          fieldsExtracted={91}
-          totalFields={92}
+          confidenceScore={97}
+          fieldsExtracted={34}
+          totalFields={35}
         />
       </Box>
     </Box>
@@ -554,7 +579,7 @@ export default function SubmissionIntake() {
           ✅ STP Eligible — Straight-Through Processing
         </Typography>
         <Typography sx={{ fontSize: '0.8125rem', color: BLOOM.textSecondary }}>
-          Clean medical history, within appetite, no referral triggers detected. Expected table class: Preferred Plus.
+          Non-qualified annuity, no replacements, all required fields complete. No suitability flags detected.
         </Typography>
       </Paper>
 
@@ -562,9 +587,10 @@ export default function SubmissionIntake() {
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, mb: 1.25 }}>Submission Checklist</Typography>
         {[
-          'ACORD 103 uploaded and extracted (98% confidence)',
-          'Required fields complete — 1 field manually corrected (DOB)',
-          'No referral triggers — STP pathway confirmed',
+          'Application uploaded and extracted — 97% confidence',
+          'All required fields complete — no manual corrections needed',
+          'No replacement triggers — suitability review not required',
+          'Representative licensing verified — NPN 1234, SC licensed',
         ].map((item) => (
           <Box key={item} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 0.875 }}>
             <CheckCircle sx={{ fontSize: 16, color: BLOOM.green, flexShrink: 0, mt: 0.125 }} />
@@ -577,27 +603,27 @@ export default function SubmissionIntake() {
       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2.5 }}>
         {[
           {
-            title: 'Proposed Insured',
-            rows: [['Name', data.fullName || 'Maria Rodriguez'], ['DOB', data.dob || '1990-05-13'], ['Gender', data.gender || 'Female'], ['Occupation', data.occupation || 'Registered Nurse']],
+            title: 'Annuitant / Owner',
+            rows: [['Name', data.fullName || 'Sam W Smith'], ['DOB', data.dob || '01/01/2000'], ['Gender', data.gender || 'Male'], ['State', data.state || 'SC']],
           },
           {
-            title: 'Coverage Requested',
-            rows: [['Product', data.productType || 'Term Life — 20 Year'], ['Face Amount', data.faceAmount || '$500,000'], ['Premium Mode', data.premiumMode || 'Monthly'], ['Riders', data.riders || 'Waiver of Premium']],
+            title: 'Plan & Payment',
+            rows: [['Product', data.productName || 'Bloom Prime Options — Variable Annuity'], ['Plan Type', data.planType || 'Non-Qualified'], ['Purchase Payment', data.purchasePayment || '$100,000'], ['Tax Year', data.taxYear || '2026']],
           },
           {
-            title: 'Medical & Lifestyle',
-            rows: [['Pre-existing', data.preExisting || 'None'], ['Medications', data.medications || 'None'], ['Tobacco', data.tobacco || 'Never'], ['Alcohol', data.alcohol || 'Social']],
+            title: 'Riders & Options',
+            rows: [['Living Benefit', data.livingBenefitRider || 'None elected'], ['Death Benefit', data.deathBenefitRider || 'None elected'], ['DCA Source', data.dcaSource || 'Fixed Account'], ['Replacements', data.replacements || 'No']],
           },
           {
             title: 'Beneficiary',
-            rows: [['Primary', data.primaryBeneficiary || 'Carlos Rodriguez'], ['Relationship', data.primaryRelationship || 'Spouse'], ['%', data.primaryPct || '100%'], ['Contingent', data.contingentBeneficiary || 'Elena Rodriguez']],
+            rows: [['Primary', data.primaryBeneficiary || 'John Smith'], ['Relationship', data.primaryRelationship || 'Spouse'], ['%', data.primaryPct || '100%'], ['Contingent', data.contingentBeneficiary || 'Jake James John']],
           },
         ].map((card) => (
           <Paper key={card.title} sx={{ p: 1.75 }}>
             <Typography sx={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: BLOOM.blue, mb: 1 }}>{card.title}</Typography>
             {card.rows.map(([k, v]) => (
               <Box key={k} sx={{ display: 'flex', gap: 1, mb: 0.5 }}>
-                <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', width: 100, flexShrink: 0 }}>{k}</Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', width: 110, flexShrink: 0 }}>{k}</Typography>
                 <Typography sx={{ fontSize: '0.75rem', fontWeight: 500 }}>{v}</Typography>
               </Box>
             ))}
@@ -694,9 +720,9 @@ export default function SubmissionIntake() {
           <Divider sx={{ mb: 2 }} />
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             {[
-              ['Submission ID', 'NB-2026-LA-006'],
-              ['Applicant', 'Maria Rodriguez'],
-              ['Product', 'Term Life — 20 Year · $500,000'],
+              ['Submission ID', 'NB-2026-VA-001'],
+              ['Applicant', 'Sam W Smith'],
+              ['Product', 'Bloom Prime Options — Variable Annuity · $100,000'],
               ['Routing', 'STP Queue — Straight-Through Processing'],
               ['Expected Issue', '1–2 business days'],
             ].map(([k, v]) => (
@@ -707,7 +733,7 @@ export default function SubmissionIntake() {
             ))}
           </Box>
           <Alert severity="success" sx={{ mt: 2 }}>
-            Routed to STP Queue · AI confidence 98% · Expected same-day issue
+            Routed to STP Queue · AI confidence 97% · Expected same-day issue
           </Alert>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
